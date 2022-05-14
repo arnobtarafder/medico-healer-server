@@ -15,25 +15,25 @@ const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
 async function run() {
-    try{
-       await client.connect()
-       const servicesCollection = client.db("medico_healer").collection("services");
+    try {
+        await client.connect()
+        const servicesCollection = client.db("medico_healer").collection("services");
 
-       app.get("/services", async (req, res) => {
-           const query = {};
-           const cursor = await servicesCollection.find(query).toArray();
-           res.send(cursor)
-       })
-    
-    }   
-    finally{
+        app.get("/services", async (req, res) => {
+            const query = {};
+            const collection = await servicesCollection.find(query).toArray();
+            res.send(collection);
+        })
 
-    }         
+    }
+    finally {
+
+    }
 }
 
 run().catch(console.dir)
 
-app.get("/" , (req, res) => {
+app.get("/", (req, res) => {
     res.send("Hello! I am Mr.Developer from medico healer")
 })
 
