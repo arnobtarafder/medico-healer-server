@@ -58,6 +58,11 @@ async function run() {
             res.send(collection);
         })
 
+        app.get("/users", async(req, res) => {
+            const users = await userCollection.find().toArray();
+            res.send(users)
+        })
+
 
         // WARNING::
         // THIS IS NOT THE PROPER WAY TO QUERY,
