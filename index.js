@@ -127,10 +127,10 @@ async function run() {
                 const bookings = await bookingCollection.find(query).toArray();
                 return res.send(bookings);
             }
-            const query = { patient: patient };
-            const bookings = await bookingCollection.find(query).toArray();
+            else{
+                return res.status(403).send({ message: 'forbidden access' });
+            }
 
-            res.send(bookings)
         })
 
     }
