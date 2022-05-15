@@ -19,6 +19,7 @@ async function run() {
         await client.connect()
         const serviceCollection = client.db("medico_healer").collection("services");
         const bookingCollection = client.db("medico_healer").collection("bookings");
+        const userCollection = client.db("medico_healer").collection("users");
 
 
         /**
@@ -27,6 +28,7 @@ async function run() {
          * app.get("/booking/:id") // get a specific booking
          * app.post("/booking") // add a new booking
          * app.patch("/booking/:id") //
+         * app.put("/booking/:id") // upsert ==> update (if exists) or insert (if doesn't exist)
          * app.delete("/booking/:id")
          */
 
@@ -43,7 +45,7 @@ async function run() {
         // AFTER LEARNING MORE ABOUT MONGODB, USE AGGREGATE LOOKUP, PIPELINE, MATCH, GROUP
         app.get("/available", async (req, res) => {
             const date = req.query.date;
-            console.log(date);
+            // console.log(date);
 
             // step 1: get all services
             const services = await serviceCollection.find().toArray();
@@ -70,15 +72,39 @@ async function run() {
 
 
 
+        app.put("/user/:email", async (req, res) => {
+            const email = req.params.email;
+            const user = req.body;
+            const filter = { email: email };
+            const options = { upsert: true };
+            const updateDoc = {
+                $set: user,
+            }
+            const result = await userCollection.updateOne(filter, updateDoc, options);
+            res.send(result)
+        })
+
+
+
         app.post('/booking', async (req, res) => {
             const booking = req.body;
-            const query = { treatment: booking.treatment, date: booking.date, email: booking.email }
+            const query = { treatment: booking.treatment, date: booking.date, patient: booking.patient }
             const exists = await bookingCollection.findOne(query);
             if (exists) {
                 return res.send({ success: false, booking: exists })
             }
             const result = await bookingCollection.insertOne(booking);
             return res.send({ success: true, result });
+        })
+
+
+        app.get("/booking", async (req, res) => {
+            const patient = req?.query?.patient;
+            console.log(patient)
+            const query = { patient: patient };
+            const bookings = await bookingCollection.find(query).toArray();
+
+            res.send(bookings)
         })
 
     }
