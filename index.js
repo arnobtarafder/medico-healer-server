@@ -109,8 +109,6 @@ async function run() {
 
         app.post('/booking', async (req, res) => {
             const booking = req.body;
-            const authorization = req?.headers?.authorization;
-            console.log("auth header", authorization);
             const query = { treatment: booking.treatment, date: booking.date, patient: booking.patient }
             const exists = await bookingCollection.findOne(query);
             if (exists) {
@@ -123,7 +121,8 @@ async function run() {
 
         app.get("/booking", verifyJWT, async (req, res) => {
             const patient = req?.query?.patient;
-            console.log(patient)
+            const authorization = req?.headers?.authorization;
+            console.log("auth header", authorization);
             const query = { patient: patient };
             const bookings = await bookingCollection.find(query).toArray();
 
