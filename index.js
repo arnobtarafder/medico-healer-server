@@ -33,6 +33,10 @@ function verifyJWT(req, res, next) {
 }
 
 
+
+
+
+
 async function run() {
     try {
         await client.connect()
@@ -54,7 +58,7 @@ async function run() {
 
         app.get("/services", async (req, res) => {
             const query = {};
-            const collection = await serviceCollection.find(query).toArray();
+            const collection = await serviceCollection.find(query).project({name: 1}).toArray();
             res.send(collection);
         })
 
@@ -78,13 +82,13 @@ async function run() {
             res.send({ result, token });
         })
 
-        app.get('/admin/:email', async(req, res) =>{
+        app.get('/admin/:email', async (req, res) => {
             const email = req.params.email;
-            const user = await userCollection.findOne({email: email});
-            const isAdmin = user.role === 'admin';
-            res.send({admin: isAdmin});
-          })
-      
+            const user = await userCollection.findOne({ email: email });
+            const isAdmin = user?.role === 'admin';
+            res.send({ admin: isAdmin });
+        })
+
 
         app.put("/users/admin/:email", verifyJWT, async (req, res) => {
             const email = req.params.email;
@@ -100,80 +104,80 @@ async function run() {
                 res.send(result);
             }
 
-            else{
-                res.status(403).send({message: "Unauthorized Success"})
+            else {
+                res.status(403).send({ message: "Unauthorized Success" })
             }
 
-    })
-
-
-
-
-    //-------------BOOKING  
-    app.get("/booking", verifyJWT, async (req, res) => {
-        const patient = req?.query?.patient;
-        const decodedEmail = req.decoded.email;
-        if (patient === decodedEmail) {
-            const query = { patient: patient };
-            const bookings = await bookingCollection.find(query).toArray();
-            return res.send(bookings);
-        }
-        else {
-            return res.status(403).send({ message: 'forbidden access' });
-        }
-
-    })
-
-    app.post('/booking', async (req, res) => {
-        const booking = req.body;
-        const query = { treatment: booking.treatment, date: booking.date, patient: booking.patient }
-        const exists = await bookingCollection.findOne(query);
-        if (exists) {
-            return res.send({ success: false, booking: exists })
-        }
-        const result = await bookingCollection.insertOne(booking);
-        return res.send({ success: true, result });
-    })
-
-
-
-
-
-    // WARNING::
-    // THIS IS NOT THE PROPER WAY TO QUERY,
-    // AFTER LEARNING MORE ABOUT MONGODB, USE AGGREGATE LOOKUP, PIPELINE, MATCH, GROUP
-    app.get("/available", async (req, res) => {
-        const date = req.query.date;
-        // console.log(date);
-
-        // step 1: get all services
-        const services = await serviceCollection.find().toArray();
-
-        // step 2: get the booking of that day. output: [{}, {}, {}, {}, {}]
-        const query = { date: date };
-        const bookings = await bookingCollection.find(query).toArray();
-
-        // step 3: for each serviceCollection, find bookings for that service 
-        services.forEach(service => {
-            // steps 4: find bookings for that service. output: [{}, {}, {}]
-            const serviceBookings = bookings.filter(book => book.treatment === service.name);
-            // steps 5: select slots for the service Bookings: ['', '', '']
-            const bookedSlots = serviceBookings.map(book => book.slot);
-            // service.booked = bookedSlots;
-            // steps 6: select those slots that are not in book Slots 
-            const available = service.slots.filter(slot => !bookedSlots.includes(slot));
-            // step 7: set available to slots to make it easier 
-            service.slots = available;
         })
 
-        res.send(services)
-    })
 
-}
+
+
+        //-------------BOOKING  
+        app.get("/booking", verifyJWT, async (req, res) => {
+            const patient = req?.query?.patient;
+            const decodedEmail = req.decoded.email;
+            if (patient === decodedEmail) {
+                const query = { patient: patient };
+                const bookings = await bookingCollection.find(query).toArray();
+                return res.send(bookings);
+            }
+            else {
+                return res.status(403).send({ message: 'forbidden access' });
+            }
+
+        })
+
+        app.post('/booking', async (req, res) => {
+            const booking = req.body;
+            const query = { treatment: booking.treatment, date: booking.date, patient: booking.patient }
+            const exists = await bookingCollection.findOne(query);
+            if (exists) {
+                return res.send({ success: false, booking: exists })
+            }
+            const result = await bookingCollection.insertOne(booking);
+            return res.send({ success: true, result });
+        })
+
+
+
+
+
+        // WARNING::
+        // THIS IS NOT THE PROPER WAY TO QUERY,
+        // AFTER LEARNING MORE ABOUT MONGODB, USE AGGREGATE LOOKUP, PIPELINE, MATCH, GROUP
+        app.get("/available", async (req, res) => {
+            const date = req.query.date;
+            // console.log(date);
+
+            // step 1: get all services
+            const services = await serviceCollection.find().toArray();
+
+            // step 2: get the booking of that day. output: [{}, {}, {}, {}, {}]
+            const query = { date: date };
+            const bookings = await bookingCollection.find(query).toArray();
+
+            // step 3: for each serviceCollection, find bookings for that service 
+            services.forEach(service => {
+                // steps 4: find bookings for that service. output: [{}, {}, {}]
+                const serviceBookings = bookings.filter(book => book.treatment === service.name);
+                // steps 5: select slots for the service Bookings: ['', '', '']
+                const bookedSlots = serviceBookings.map(book => book.slot);
+                // service.booked = bookedSlots;
+                // steps 6: select those slots that are not in book Slots 
+                const available = service.slots.filter(slot => !bookedSlots.includes(slot));
+                // step 7: set available to slots to make it easier 
+                service.slots = available;
+            })
+
+            res.send(services)
+        })
+
+    }
 
     finally {
 
-}
+    }
 }
 
 run().catch(console.dir)
