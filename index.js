@@ -80,83 +80,92 @@ async function run() {
 
         app.put("/users/admin/:email", verifyJWT, async (req, res) => {
             const email = req.params.email;
-            const filter = { email: email };
-            const updateDoc = {
-                $set: { role: "admin" },
-            }
-            const result = await userCollection.updateOne(filter, updateDoc);
+            const requester = req.decoded.email;
+            const requesterAccount = await userCollection.findOne({ email: requester });
+            if (requesterAccount.role === "admin") {
+                const filter = { email: email };
+                const updateDoc = {
+                    $set: { role: "admin" },
+                }
+                const result = await userCollection.updateOne(filter, updateDoc);
 
-            res.send(result);
-        })
-
-
-
-
-      //-------------BOOKING  
-        app.get("/booking", verifyJWT, async (req, res) => {
-            const patient = req?.query?.patient;
-            const decodedEmail = req.decoded.email;
-            if (patient === decodedEmail) {
-                const query = { patient: patient };
-                const bookings = await bookingCollection.find(query).toArray();
-                return res.send(bookings);
-            }
-            else {
-                return res.status(403).send({ message: 'forbidden access' });
+                res.send(result);
             }
 
-        })
-
-        app.post('/booking', async (req, res) => {
-            const booking = req.body;
-            const query = { treatment: booking.treatment, date: booking.date, patient: booking.patient }
-            const exists = await bookingCollection.findOne(query);
-            if (exists) {
-                return res.send({ success: false, booking: exists })
+            else{
+                res.status(403).send({message: "Unauthorized Success"})
             }
-            const result = await bookingCollection.insertOne(booking);
-            return res.send({ success: true, result });
-        })
+
+    })
 
 
 
 
-        
-        // WARNING::
-        // THIS IS NOT THE PROPER WAY TO QUERY,
-        // AFTER LEARNING MORE ABOUT MONGODB, USE AGGREGATE LOOKUP, PIPELINE, MATCH, GROUP
-        app.get("/available", async (req, res) => {
-            const date = req.query.date;
-            // console.log(date);
-
-            // step 1: get all services
-            const services = await serviceCollection.find().toArray();
-
-            // step 2: get the booking of that day. output: [{}, {}, {}, {}, {}]
-            const query = { date: date };
+    //-------------BOOKING  
+    app.get("/booking", verifyJWT, async (req, res) => {
+        const patient = req?.query?.patient;
+        const decodedEmail = req.decoded.email;
+        if (patient === decodedEmail) {
+            const query = { patient: patient };
             const bookings = await bookingCollection.find(query).toArray();
+            return res.send(bookings);
+        }
+        else {
+            return res.status(403).send({ message: 'forbidden access' });
+        }
 
-            // step 3: for each serviceCollection, find bookings for that service 
-            services.forEach(service => {
-                // steps 4: find bookings for that service. output: [{}, {}, {}]
-                const serviceBookings = bookings.filter(book => book.treatment === service.name);
-                // steps 5: select slots for the service Bookings: ['', '', '']
-                const bookedSlots = serviceBookings.map(book => book.slot);
-                // service.booked = bookedSlots;
-                // steps 6: select those slots that are not in book Slots 
-                const available = service.slots.filter(slot => !bookedSlots.includes(slot));
-                // step 7: set available to slots to make it easier 
-                service.slots = available;
-            })
+    })
 
-            res.send(services)
+    app.post('/booking', async (req, res) => {
+        const booking = req.body;
+        const query = { treatment: booking.treatment, date: booking.date, patient: booking.patient }
+        const exists = await bookingCollection.findOne(query);
+        if (exists) {
+            return res.send({ success: false, booking: exists })
+        }
+        const result = await bookingCollection.insertOne(booking);
+        return res.send({ success: true, result });
+    })
+
+
+
+
+
+    // WARNING::
+    // THIS IS NOT THE PROPER WAY TO QUERY,
+    // AFTER LEARNING MORE ABOUT MONGODB, USE AGGREGATE LOOKUP, PIPELINE, MATCH, GROUP
+    app.get("/available", async (req, res) => {
+        const date = req.query.date;
+        // console.log(date);
+
+        // step 1: get all services
+        const services = await serviceCollection.find().toArray();
+
+        // step 2: get the booking of that day. output: [{}, {}, {}, {}, {}]
+        const query = { date: date };
+        const bookings = await bookingCollection.find(query).toArray();
+
+        // step 3: for each serviceCollection, find bookings for that service 
+        services.forEach(service => {
+            // steps 4: find bookings for that service. output: [{}, {}, {}]
+            const serviceBookings = bookings.filter(book => book.treatment === service.name);
+            // steps 5: select slots for the service Bookings: ['', '', '']
+            const bookedSlots = serviceBookings.map(book => book.slot);
+            // service.booked = bookedSlots;
+            // steps 6: select those slots that are not in book Slots 
+            const available = service.slots.filter(slot => !bookedSlots.includes(slot));
+            // step 7: set available to slots to make it easier 
+            service.slots = available;
         })
 
-   }
+        res.send(services)
+    })
+
+}
 
     finally {
 
-    }
+}
 }
 
 run().catch(console.dir)
