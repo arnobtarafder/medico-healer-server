@@ -43,6 +43,8 @@ async function run() {
         const serviceCollection = client.db("medico_healer").collection("services");
         const bookingCollection = client.db("medico_healer").collection("bookings");
         const userCollection = client.db("medico_healer").collection("users");
+        const doctorCollection = client.db("medico_healer").collection("doctors");
+
 
 
         /**
@@ -137,6 +139,13 @@ async function run() {
             }
             const result = await bookingCollection.insertOne(booking);
             return res.send({ success: true, result });
+        })
+
+
+        app.post("/doctor", async(req, res) => {
+            const doctor = req.body;
+            const result = await doctorCollection.insertOne(doctor);
+            res.send(result);
         })
 
 
