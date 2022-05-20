@@ -1,4 +1,4 @@
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const express = require('express');
 const cors = require('cors');
 const jwt = require("jsonwebtoken");
@@ -135,7 +135,7 @@ async function run() {
 
         app.get("/booking/:id", verifyJWT, async (req, res) => {
             const id = req.params.id;
-            const query = {_id: Object(id)};
+            const query = {_id: ObjectId(id)};
             const booking = await bookingCollection.findOne(query);
             res.send(booking)
         })
