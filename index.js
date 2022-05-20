@@ -146,6 +146,11 @@ async function run() {
 
 
         //----------------DOCTOR
+        app.get("/doctors", verifyJWT, verifyAdmin, async(req, res) => {
+            const doctors = await doctorCollection.find().toArray();
+            res.send(doctors);
+        })
+
    
         app.post("/doctors", verifyJWT, verifyAdmin, async(req, res) => {
             const doctor = req.body;
