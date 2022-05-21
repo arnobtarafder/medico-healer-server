@@ -46,6 +46,7 @@ async function run() {
         const bookingCollection = client.db("medico_healer").collection("bookings");
         const userCollection = client.db("medico_healer").collection("users");
         const doctorCollection = client.db("medico_healer").collection("doctors");
+        const paymentCollection = client.db("medico_healer").collection("payments");
 
 
         const verifyAdmin = async (req, res, next) => {
@@ -152,6 +153,23 @@ async function run() {
             const result = await bookingCollection.insertOne(booking);
             return res.send({ success: true, result });
         })
+
+        app.patch("/booking/:id", verifyJWT, async(req, res) => {
+            const id = req.params.id;
+            const payment = req.body;
+            const filter = {_id: ObjectId(id)};
+            const updatedDoc = {
+                $set: {
+                    paid: true,
+                    transactionId: payment.transactionId
+                }
+            }
+
+            const updatedBooking = await bookingCollection.updateOne(filter, updatedDoc)
+            const result = await paymentCollection.insertOne(payment)
+            res.send(result)
+        })
+
 
 
 
